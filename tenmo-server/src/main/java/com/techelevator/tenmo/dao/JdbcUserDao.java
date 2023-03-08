@@ -51,7 +51,7 @@ public class JdbcUserDao implements UserDao {
     @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT user_id, username, password_hash FROM tenmo_user";
+        String sql = "SELECT user_id, username FROM tenmo_user";
 
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
         while (results.next()) {
@@ -94,6 +94,51 @@ public class JdbcUserDao implements UserDao {
         }
 
         return true;
+    }
+
+    @Override
+    public boolean withdraw(int id, BigDecimal balance){
+        String sql = "UPDATE account SET balance = balance - ? WHERE user_id = ?;";
+        try{
+            jdbcTemplate.update(sql, balance, id);
+        } catch (DataAccessException e){
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean deposit(int id, BigDecimal balance){
+        String sql = "UPDATE account SET balance = balance + ? WHERE user_id = ?;";
+        try{
+            jdbcTemplate.update(sql, balance, id);
+        } catch (DataAccessException e){
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean addTransfer(int type, int status, int senderId, int receiverId, BigDecimal amount) {
+        String sql = "INSERT INTO transfer(transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
+                "VALUES (?, ?, ?, ?, ?);";
+        try{
+            jdbcTemplate.update(sql, type, status, senderId, receiverId, amount);
+            return true;
+        } catch (DataAccessException e) {
+            return false;
+    }
+    }
+
+    //TODO test method
+    @Override
+    public BigDecimal getBalance(String username){
+        String sql = "SELECT balance FROM account JOIN tenmo_user ON account.user_id = tenmo_user.user_id WHERE tenmo_user.username = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, username);
+        if(results.next()){
+            return results.getBigDecimal("balance");
+        }
+        return null;
     }
 
     private User mapRowToUser(SqlRowSet rs) {
