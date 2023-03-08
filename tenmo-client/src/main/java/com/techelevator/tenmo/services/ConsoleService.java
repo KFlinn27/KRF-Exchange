@@ -1,9 +1,11 @@
 package com.techelevator.tenmo.services;
 
 
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.UserCredentials;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Scanner;
 
 public class ConsoleService {
@@ -88,4 +90,17 @@ public class ConsoleService {
         System.out.println("An error occurred. Check the log for details.");
     }
 
+    public void listTransfers(List<Transfer> transfers) {
+        for(Transfer current : transfers){
+            System.out.println(current.toString());
+        }
+    }
+
+    public void printSuccessMessage(int sendToId, BigDecimal amount) {
+        System.out.println("You sent " + amount + " to " + sendToId);
+    }
+
+    public void printFailMessage() {
+        System.out.println("Your send request failed.");
+    }
 }

@@ -1,5 +1,6 @@
 package com.techelevator.tenmo.dao;
 
+import com.techelevator.tenmo.model.Transfer;
 import com.techelevator.tenmo.model.User;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -51,7 +52,7 @@ public class JdbcUserDao implements UserDao {
     @Override
     public List<User> findAll() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT user_id, username FROM tenmo_user";
+        String sql = "SELECT user_id, username, password_hash FROM tenmo_user";
 
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
         while (results.next()) {
@@ -118,6 +119,7 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+
     @Override
     public boolean addTransfer(int type, int status, int senderId, int receiverId, BigDecimal amount) {
         String sql = "INSERT INTO transfer(transfer_type_id, transfer_status_id, account_from, account_to, amount) " +
@@ -130,6 +132,51 @@ public class JdbcUserDao implements UserDao {
     }
     }
 
+    @Override
+    public List<Transfer> listTransfersForUser(int idByUsername) {
+        List<Transfer> transfers = new ArrayList<>();
+        int accIdToSearch = getAccountIdWithUserId(idByUsername);
+        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
+                "FROM transfer \n" +
+                "JOIN account ON transfer.account_from = account.account_id\n" +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
+                "WHERE account_to = ?\n" +
+                "\n" +
+                "UNION\n" +
+                "\n" +
+                "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
+                "FROM transfer \n" +
+                "JOIN account ON transfer.account_to = account.account_id\n" +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
+                "WHERE account_from = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accIdToSearch, accIdToSearch);
+        while(results.next()){
+            transfers.add(mapRowToTransfer(results));
+        }
+        return transfers;
+    }
+
+    @Override
+    public Transfer transferByID(int id) {
+        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount " +
+                "FROM transfer WHERE transfer_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, id);
+        if(results.next()){
+            return mapRowToTransfer(results);
+        }
+        return null;
+    }
+
+    @Override
+    public int getAccountIdWithUserId(int userId) {
+        String sql = "SELECT account_id FROM account WHERE account.user_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
+        if(results.next()){
+            return results.getInt("account_id");
+        }
+        return 0;
+    }
+
     //TODO test method
     @Override
     public BigDecimal getBalance(String username){
@@ -139,6 +186,18 @@ public class JdbcUserDao implements UserDao {
             return results.getBigDecimal("balance");
         }
         return null;
+    }
+
+    private Transfer mapRowToTransfer(SqlRowSet row){
+        Transfer transfer = new Transfer();
+        transfer.setTransferId(row.getInt("transfer_id"));
+        transfer.setTypeId(row.getInt("transfer_type_id"));
+        transfer.setStatusId(row.getInt("transfer_status_id"));
+        transfer.setAccountFrom(row.getInt("account_from"));
+        transfer.setAccountTo(row.getInt("account_to"));
+        transfer.setAmount(row.getBigDecimal("amount"));
+        transfer.setUsername(row.getString("username"));
+        return transfer;
     }
 
     private User mapRowToUser(SqlRowSet rs) {

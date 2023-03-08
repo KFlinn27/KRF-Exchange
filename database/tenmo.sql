@@ -71,8 +71,4 @@ INSERT INTO transfer_status (transfer_status_desc) VALUES ('Rejected');
 INSERT INTO transfer_type (transfer_type_desc) VALUES ('Request');
 INSERT INTO transfer_type (transfer_type_desc) VALUES ('Send');
 
-INSERT INTO account (user_id, balance) VALUES (1001, 1000); -- 2001
-INSERT INTO account (user_id, balance) VALUES (1002, 1000); -- 2002
-INSERT INTO account (user_id, balance) VALUES (1002, 1000); -- 2003
-
 COMMIT;

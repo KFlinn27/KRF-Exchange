@@ -1,12 +1,16 @@
 package com.techelevator.tenmo;
 
+import com.techelevator.tenmo.model.Transfer;
+
 import com.techelevator.tenmo.model.AuthenticatedUser;
+import com.techelevator.tenmo.model.User;
 import com.techelevator.tenmo.model.UserCredentials;
 import com.techelevator.tenmo.services.AuthenticationService;
 import com.techelevator.tenmo.services.ConsoleService;
 import com.techelevator.tenmo.services.TenmoService;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public class App {
 
@@ -92,14 +96,15 @@ public class App {
 
 	private void viewCurrentBalance() {
         BigDecimal balance = tenmoService.getBalance();
+        //TODO create message in consoleservice for balance and get rid of sout
         System.out.println(balance);
-		// TODO Auto-generated method stub
 
 		
 	}
 
 	private void viewTransferHistory() {
 		// TODO Auto-generated method stub
+        consoleService.listTransfers(tenmoService.getTransfers());
 		
 	}
 
@@ -109,7 +114,15 @@ public class App {
 	}
 
 	private void sendBucks() {
-		// TODO Auto-generated method stub
+		// TODO Auto-generated method
+        int sendToId = consoleService.promptForInt("Please enter the user ID");
+        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer");
+        if(tenmoService.sendMoney(sendToId, amount)){
+            consoleService.printSuccessMessage(sendToId, amount);
+        } else{
+            consoleService.printFailMessage();
+        };
+
 		
 	}
 
