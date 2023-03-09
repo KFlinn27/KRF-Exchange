@@ -23,6 +23,16 @@ public class Transfer {
         this.username = username;
     }
 
+    public String getTypeString(){
+        if(this.typeId == 1){
+            return "Request";
+        } else if(this.typeId == 2){
+            return "Send";
+        } else {
+            return "Find out how this message even appeared.";
+        }
+    }
+
     @Override
     public String toString(){
         return transferId + "      " + username + "        " + amount;

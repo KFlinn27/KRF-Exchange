@@ -35,6 +35,11 @@ public class User {
     }
 
     @Override
+    public String toString(){
+        return "ID " + getId() + " represents user " + getUsername() + ".";
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(id, username);
     }

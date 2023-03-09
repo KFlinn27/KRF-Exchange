@@ -49,14 +49,19 @@ public class JdbcUserDao implements UserDao {
     }
 
     @Override
-    public List<User> findAll() {
+    public List<User> findAll(String username) {
         List<User> users = new ArrayList<>();
+        //dont select our user
         String sql = "SELECT user_id, username, password_hash FROM tenmo_user";
+//        String sql = "SELECT user_id, username, password_hash FROM tenmo_user WHERE username != ?";
 
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql);
         while (results.next()) {
             User user = mapRowToUser(results);
-            users.add(user);
+            //find our user and dont add
+            if(!user.getUsername().equals(username)){
+                users.add(user);
+            }
         }
 
         return users;
@@ -118,6 +123,35 @@ public class JdbcUserDao implements UserDao {
         return true;
     }
 
+    @Override
+    public int getUserIdWithAccountId(int accountId) {
+        String sql = "SELECT user_id FROM account WHERE account_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
+        if(results.next()){
+            return results.getInt("user_id");
+        }
+        return 0;
+    }
+
+    @Override
+    public int getAccountIdWithUserId(int userId) {
+        String sql = "SELECT account_id FROM account WHERE account.user_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
+        if(results.next()){
+            return results.getInt("account_id");
+        }
+        return 0;
+    }
+
+    @Override
+    public BigDecimal getBalance(String username){
+        String sql = "SELECT balance FROM account JOIN tenmo_user ON account.user_id = tenmo_user.user_id WHERE tenmo_user.username = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, username);
+        if(results.next()){
+            return results.getBigDecimal("balance");
+        }
+        return null;
+    }
 
     @Override
     public boolean addTransfer(int type, int status, int senderId, int receiverId, BigDecimal amount) {
@@ -128,33 +162,36 @@ public class JdbcUserDao implements UserDao {
             return true;
         } catch (DataAccessException e) {
             return false;
-    }
+        }
     }
 
     @Override
     public List<Transfer> listTransfersForUser(int idByUsername) {
         List<Transfer> transfers = new ArrayList<>();
         int accIdToSearch = getAccountIdWithUserId(idByUsername);
-        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
-                "FROM transfer \n" +
+        String sql = "SELECT * FROM (\n" +
+                "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
+                "FROM transfer\n" +
                 "JOIN account ON transfer.account_from = account.account_id\n" +
                 "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
                 "WHERE account_to = ?\n" +
-                //TODO order by id's 
                 "\n" +
                 "UNION\n" +
                 "\n" +
                 "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
-                "FROM transfer \n" +
+                "FROM transfer\n" +
                 "JOIN account ON transfer.account_to = account.account_id\n" +
                 "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
-                "WHERE account_from = ?;";
+                "WHERE account_from = ?\n" +
+                ")\n" +
+                "as t order by transfer_id;";
         SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accIdToSearch, accIdToSearch);
         while(results.next()){
             transfers.add(mapRowToTransfer(results));
         }
         return transfers;
     }
+
 
     @Override
     public Transfer transferByID(int transferId, int userId) {
@@ -178,16 +215,6 @@ public class JdbcUserDao implements UserDao {
         return null;
     }
 
-    @Override
-    public int getAccountIdWithUserId(int userId) {
-        String sql = "SELECT account_id FROM account WHERE account.user_id = ?;";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId);
-        if(results.next()){
-            return results.getInt("account_id");
-        }
-        return 0;
-    }
-    //TODO when we add the ability to approve or reject transfer we need to change the status and the type
     @Override
     public List<Transfer> listPendingTransfersForUser(int idByUsername) {
         List<Transfer> pendingTransfers = new ArrayList<>();
@@ -218,15 +245,6 @@ public class JdbcUserDao implements UserDao {
         return transfer;
     }
 
-    @Override
-    public int getUserIdWithAccountId(int accountId) {
-        String sql = "SELECT user_id FROM account WHERE account_id = ?;";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
-        if(results.next()){
-            return results.getInt("user_id");
-        }
-        return 0;
-    }
 
     @Override
     public void approvePendingTransfer(int id) {
@@ -240,16 +258,6 @@ public class JdbcUserDao implements UserDao {
         jdbcTemplate.update(sql, id);
     }
 
-    //TODO test method
-    @Override
-    public BigDecimal getBalance(String username){
-        String sql = "SELECT balance FROM account JOIN tenmo_user ON account.user_id = tenmo_user.user_id WHERE tenmo_user.username = ?;";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, username);
-        if(results.next()){
-            return results.getBigDecimal("balance");
-        }
-        return null;
-    }
 
     private Transfer mapRowToTransfer(SqlRowSet row){
         Transfer transfer = new Transfer();

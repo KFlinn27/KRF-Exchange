@@ -3,6 +3,7 @@ package com.techelevator.tenmo.services;
 
 import com.techelevator.tenmo.model.Amount;
 import com.techelevator.tenmo.model.Transfer;
+import com.techelevator.tenmo.model.User;
 import com.techelevator.util.BasicLogger;
 import org.springframework.http.*;
 import org.springframework.web.client.ResourceAccessException;
@@ -36,13 +37,23 @@ public class TenmoService {
         return balance;
     }
 
-    //TODO getusers
-
 
     private HttpEntity<Void> makeAuthEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(authToken);
         return new HttpEntity<>(headers);
+    }
+
+    public List<User> getUsers() {
+        List<User> users = new ArrayList<>();
+        try{
+            ResponseEntity<User[]> response = restTemplate.exchange(API_BASE_URL, HttpMethod.GET, makeAuthEntity(), User[].class);
+            users = Arrays.asList(Objects.requireNonNull(response.getBody()));
+
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return users;
     }
 
     public List<Transfer> getTransfers() {
@@ -119,4 +130,14 @@ public class TenmoService {
     }
 
 
+    public int getAccountID() {
+        Integer accId = null;
+        try {
+            ResponseEntity<Integer> response = restTemplate.exchange(API_BASE_URL + "accountId/", HttpMethod.GET, makeAuthEntity(), Integer.class);
+            accId = response.getBody();
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return accId;
+    }
 }

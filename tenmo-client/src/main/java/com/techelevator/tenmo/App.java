@@ -21,6 +21,7 @@ public class App {
     private TenmoService tenmoService = new TenmoService();
 
     private AuthenticatedUser currentUser;
+    private int currentUserAccountID;
 
     public static void main(String[] args) {
         App app = new App();
@@ -31,6 +32,7 @@ public class App {
         consoleService.printGreeting();
         loginMenu();
         if (currentUser != null) {
+            currentUserAccountID = tenmoService.getAccountID();
             mainMenu();
         }
     }
@@ -80,14 +82,11 @@ public class App {
             } else if (menuSelection == 2) {
                 viewTransferHistory();
             } else if (menuSelection == 3) {
-                //TODO add ability to approve or reject a targeted id
                 viewPendingRequests();
             } else if (menuSelection == 4) {
-                //TODO add print user method
-                sendBucks();
+                transferBucks(true);
             } else if (menuSelection == 5) {
-                //TODO add print user method
-                requestBucks();
+                transferBucks(false);
             } else if (menuSelection == 0) {
                 continue;
             } else {
@@ -99,33 +98,32 @@ public class App {
 
 	private void viewCurrentBalance() {
         BigDecimal balance = tenmoService.getBalance();
-        //TODO create message in consoleservice for balance and get rid of sout
-        System.out.println(balance);
+        consoleService.printBalance(balance);
 	}
 
 	private void viewTransferHistory() {
-        consoleService.listTransfers(tenmoService.getTransfers());
+        consoleService.listTransfers(tenmoService.getTransfers(), false, currentUserAccountID);
 	}
 
 	private void viewPendingRequests() {
         List<Transfer> pendingTransfers = tenmoService.getPendingTransfers();
         if(pendingTransfers.size() > 0){
         BigDecimal balance = tenmoService.getBalance();
-		consoleService.listTransfers(pendingTransfers);
+		consoleService.listTransfers(pendingTransfers, true, 0);
         int id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
         while(id != 0) {
             Transfer transferSearchedFor = transferExists(pendingTransfers, id);
             if (transferSearchedFor == null) {
                 consoleService.printInvalidId("Not a valid ID, please enter valid ID from list.");
-                consoleService.listTransfers(pendingTransfers);
+                consoleService.listTransfers(pendingTransfers, true, 0);
                 id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
             } else {
                 boolean hasEnoughMoney = balance.compareTo(transferSearchedFor.getAmount()) >= 0;
-                int approve = consoleService.promptForInt("Enter 1 to approve, 2 to reject or 0 to exit: ");
+                int approve = consoleService.promptTransferOptions();
                 if (approve == 1 && hasEnoughMoney) {
                     //need to move money and change the transfer
                     if (tenmoService.acceptRequest(id)) {
-                        consoleService.printSuccessMessage(id, transferSearchedFor.getAmount());
+                        consoleService.printTransfer(transferSearchedFor, currentUsername(), "Approved");
                     } else {
                         consoleService.printFailMessage();
                     }
@@ -133,7 +131,7 @@ public class App {
                 } else if (approve == 2) {
                     //need to let know rejected and remove from pending list
                     tenmoService.rejectRequest(id);
-                    consoleService.promptForString("You rejected the request.");
+                    consoleService.printTransfer(transferSearchedFor, currentUsername(), "Rejected");
                     break;
                 } else if (approve == 1) {
                     consoleService.printNotEnoughFunds("Sorry, not enough money in account.");
@@ -145,7 +143,7 @@ public class App {
             }
         }
         } else {
-            consoleService.promptForString("You have no pending transfers.");
+            consoleService.printMessage("You have no pending transfers.");
         }
 	}
 
@@ -158,25 +156,66 @@ public class App {
         return null;
     }
 
-    //TODO print all users and make method
-	private void sendBucks() {
-        int sendToId = consoleService.promptForInt("Please enter the user ID: ");
+    private boolean idValid(List<User> users, int id){
+        for(User current: users){
+            if(current.getId() == id) return true;
+        }
+        return false;
+    }
+
+	private void transferBucks(boolean sending) {
+        List<User> users = tenmoService.getUsers();
+        consoleService.printUsers(users);
+        int idToSendOrReceive = consoleService.promptForInt("Please enter the user ID: ");
+        while(!idValid(users, idToSendOrReceive)){
+            consoleService.printInvalidId("This ID is not valid. Please enter a valid ID.");
+            idToSendOrReceive = consoleService.promptForInt("Please enter the user ID: ");
+        }
         BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
-        if(tenmoService.sendMoney(sendToId, amount)){
-            consoleService.printSuccessMessage(sendToId, amount);
-        } else{
+        boolean amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+        while(!amountGreaterThan0){
+            consoleService.printMessage("Your amount to transfer must be greater than 0.");
+            amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
+            amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+        }
+        if(!sending && amountGreaterThan0 && tenmoService.requestMoney(idToSendOrReceive, amount)){
+            consoleService.printRequestMessage(idToSendOrReceive, amount);
+        } else if (sending && amountGreaterThan0 && tenmoService.sendMoney(idToSendOrReceive, amount)){
+            consoleService.printSuccessMessage(idToSendOrReceive, amount);
+        }else{
             consoleService.printFailMessage();
         }
 	}
 
-	private void requestBucks() {
-        int requestFromId = consoleService.promptForInt("Please enter the user ID: ");
-        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
-        if(tenmoService.requestMoney(requestFromId, amount)){
-            consoleService.printSuccessMessage(requestFromId, amount);
-        } else{
-            consoleService.printFailMessage();
-        }
-	}
+    public String currentUsername(){
+        return currentUser.getUser().getUsername();
+    }
 
+    public boolean validAmount(BigDecimal amount, BigDecimal balance){
+        //TODO create a method for amounts that can be tested by seperating check into this method
+        return false;
+    }
+
+//
+//    private void sendBucks() {
+////        List<User> users = tenmoService.getUsers();
+////        consoleService.printUsers(users);
+////        int sendToId = consoleService.promptForInt("Please enter the user ID: ");
+////        while(!idValid(users, sendToId)){
+////            consoleService.printInvalidId("This ID is not valid. Please enter a valid ID.");
+////            sendToId = consoleService.promptForInt("Please enter the user ID: ");
+////        }
+////        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
+////        boolean amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+////        while(!amountGreaterThan0){
+////            consoleService.printMessage("Your amount to transfer must be greater than 0.");
+////            amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
+////            amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+////        }
+////        if(amountGreaterThan0 && tenmoService.sendMoney(sendToId, amount)){
+////
+////        } else{
+////            consoleService.printFailMessage();
+////        }
+////	}
 }

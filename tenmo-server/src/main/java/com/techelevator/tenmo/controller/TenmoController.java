@@ -30,8 +30,13 @@ public class TenmoController {
     }
 
     @RequestMapping(method = RequestMethod.GET)
-    public List<User> listUsers(){
-        return userDao.findAll();
+    public List<User> listUsers(Principal principal){
+        return userDao.findAll(principal.getName());
+    }
+
+    @RequestMapping(path = "accountId/", method = RequestMethod.GET)
+    public Integer getAccIdWithUserID(Principal principal){
+        return userDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName()));
     }
 
     @RequestMapping(path = "send/{receiverUserId}", method = RequestMethod.PUT)
@@ -69,7 +74,7 @@ public class TenmoController {
         return userDao.listTransfersForUser(userDao.findIdByUsername(principal.getName()));
     }
 
-    //TODO create userdao method to get account id from username
+
     @RequestMapping(path = "transfers/pending", method = RequestMethod.GET)
     public List<Transfer> getPendingTransfersForUser(Principal principal){
         return userDao.listPendingTransfersForUser(userDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName())));
