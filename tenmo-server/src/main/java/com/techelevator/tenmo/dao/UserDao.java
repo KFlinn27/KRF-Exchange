@@ -28,7 +28,17 @@ public interface UserDao {
 
     List<Transfer> listTransfersForUser(int idByUsername);
 
-    Transfer transferByID(int id);
+    Transfer transferByID(int transferId, int userId);
 
     int getAccountIdWithUserId(int userId);
+
+    List<Transfer> listPendingTransfersForUser(int idByUsername);
+
+    Transfer getTransferById(int id);
+
+    int getUserIdWithAccountId(int accountId);
+
+    void approvePendingTransfer(int id);
+
+    void rejectPendingTransfer(int id);
 }

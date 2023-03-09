@@ -80,10 +80,13 @@ public class App {
             } else if (menuSelection == 2) {
                 viewTransferHistory();
             } else if (menuSelection == 3) {
+                //TODO add ability to approve or reject a targeted id
                 viewPendingRequests();
             } else if (menuSelection == 4) {
+                //TODO add print user method
                 sendBucks();
             } else if (menuSelection == 5) {
+                //TODO add print user method
                 requestBucks();
             } else if (menuSelection == 0) {
                 continue;
@@ -98,37 +101,82 @@ public class App {
         BigDecimal balance = tenmoService.getBalance();
         //TODO create message in consoleservice for balance and get rid of sout
         System.out.println(balance);
-
-		
 	}
 
 	private void viewTransferHistory() {
-		// TODO Auto-generated method stub
         consoleService.listTransfers(tenmoService.getTransfers());
-		
 	}
 
 	private void viewPendingRequests() {
-		// TODO Auto-generated method stub
-		
+        List<Transfer> pendingTransfers = tenmoService.getPendingTransfers();
+        if(pendingTransfers.size() > 0){
+        BigDecimal balance = tenmoService.getBalance();
+		consoleService.listTransfers(pendingTransfers);
+        int id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
+        while(id != 0) {
+            Transfer transferSearchedFor = transferExists(pendingTransfers, id);
+            if (transferSearchedFor == null) {
+                consoleService.printInvalidId("Not a valid ID, please enter valid ID from list.");
+                consoleService.listTransfers(pendingTransfers);
+                id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
+            } else {
+                boolean hasEnoughMoney = balance.compareTo(transferSearchedFor.getAmount()) >= 0;
+                int approve = consoleService.promptForInt("Enter 1 to approve, 2 to reject or 0 to exit: ");
+                if (approve == 1 && hasEnoughMoney) {
+                    //need to move money and change the transfer
+                    if (tenmoService.acceptRequest(id)) {
+                        consoleService.printSuccessMessage(id, transferSearchedFor.getAmount());
+                    } else {
+                        consoleService.printFailMessage();
+                    }
+                    break;
+                } else if (approve == 2) {
+                    //need to let know rejected and remove from pending list
+                    tenmoService.rejectRequest(id);
+                    consoleService.promptForString("You rejected the request.");
+                    break;
+                } else if (approve == 1) {
+                    consoleService.printNotEnoughFunds("Sorry, not enough money in account.");
+                } else if (approve == 0) {
+                    break;
+                } else {
+                    consoleService.print1Or0Message("Please only enter 0, 1 or 2.");
+                }
+            }
+        }
+        } else {
+            consoleService.promptForString("You have no pending transfers.");
+        }
 	}
 
+    private Transfer transferExists(List<Transfer> transfers, int id){
+        for(Transfer currentTransfer : transfers){
+            if(currentTransfer.getTransferId() == id){
+                return currentTransfer;
+            }
+        }
+        return null;
+    }
+
+    //TODO print all users and make method
 	private void sendBucks() {
-		// TODO Auto-generated method
-        int sendToId = consoleService.promptForInt("Please enter the user ID");
-        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer");
+        int sendToId = consoleService.promptForInt("Please enter the user ID: ");
+        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
         if(tenmoService.sendMoney(sendToId, amount)){
             consoleService.printSuccessMessage(sendToId, amount);
         } else{
             consoleService.printFailMessage();
-        };
-
-		
+        }
 	}
 
 	private void requestBucks() {
-		// TODO Auto-generated method stub
-		
+        int requestFromId = consoleService.promptForInt("Please enter the user ID: ");
+        BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
+        if(tenmoService.requestMoney(requestFromId, amount)){
+            consoleService.printSuccessMessage(requestFromId, amount);
+        } else{
+            consoleService.printFailMessage();
+        }
 	}
 
 }

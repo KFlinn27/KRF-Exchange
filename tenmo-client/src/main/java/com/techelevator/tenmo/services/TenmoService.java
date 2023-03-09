@@ -36,7 +36,7 @@ public class TenmoService {
         return balance;
     }
 
-
+    //TODO getusers
 
 
     private HttpEntity<Void> makeAuthEntity() {
@@ -57,9 +57,21 @@ public class TenmoService {
         return transfers;
     }
 
+    public List<Transfer> getPendingTransfers() {
+        List<Transfer> transfers = new ArrayList<>();
+        try{
+            ResponseEntity<Transfer[]> response = restTemplate.exchange(API_BASE_URL + "transfers/pending", HttpMethod.GET, makeAuthEntity(), Transfer[].class);
+            transfers = Arrays.asList(Objects.requireNonNull(response.getBody()));
+
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return transfers;
+    }
+
     public boolean sendMoney(int sendToId, BigDecimal amount) {
         Amount amountSending = new Amount(amount);
-        HttpEntity<Amount> toSend = makeReservationEntity(amountSending);
+        HttpEntity<Amount> toSend = makeAmountEntity(amountSending);
         try{
             ResponseEntity<Boolean> response = restTemplate.exchange(API_BASE_URL + "send/" + sendToId, HttpMethod.PUT, toSend, Boolean.class);
             return Boolean.TRUE.equals(response.getBody());
@@ -69,13 +81,42 @@ public class TenmoService {
         return false;
     }
 
-    /**
-     * Creates a new HttpEntity with the `Authorization: Bearer:` header and a reservation request body
-     */
-    private HttpEntity<Amount> makeReservationEntity(Amount amount) {
+    public boolean requestMoney(int requestFromId, BigDecimal amount) {
+        Amount amountRequesting = new Amount(amount);
+        HttpEntity<Amount> toRequest = makeAmountEntity(amountRequesting);
+        try{
+            ResponseEntity<Boolean> response = restTemplate.exchange(API_BASE_URL + "request/" + requestFromId, HttpMethod.POST, toRequest, Boolean.class);
+            return Boolean.TRUE.equals(response.getBody());
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean acceptRequest(int id) {
+        try{
+            ResponseEntity<Boolean> response = restTemplate.exchange(API_BASE_URL + "transfer/" + id + "/accept", HttpMethod.PUT, makeAuthEntity(), Boolean.class);
+            return Boolean.TRUE.equals(response.getBody());
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+        return false;
+    }
+
+    public void rejectRequest(int id) {
+        try {
+            ResponseEntity<Void> response = restTemplate.exchange(API_BASE_URL + "transfer/" + id + "/reject", HttpMethod.PUT, makeAuthEntity(), Void.class);
+        } catch (RestClientResponseException | ResourceAccessException e) {
+            BasicLogger.log(e.getMessage());
+        }
+    }
+
+    private HttpEntity<Amount> makeAmountEntity(Amount amount) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(authToken);
         return new HttpEntity<>(amount, headers);
     }
+
+
 }

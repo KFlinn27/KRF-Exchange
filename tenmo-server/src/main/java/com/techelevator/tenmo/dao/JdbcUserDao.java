@@ -34,7 +34,6 @@ public class JdbcUserDao implements UserDao {
         } catch (NullPointerException | EmptyResultDataAccessException e) {
             throw new UsernameNotFoundException("User " + username + " was not found.");
         }
-
         return userId;
     }
 
@@ -141,6 +140,7 @@ public class JdbcUserDao implements UserDao {
                 "JOIN account ON transfer.account_from = account.account_id\n" +
                 "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
                 "WHERE account_to = ?\n" +
+                //TODO order by id's 
                 "\n" +
                 "UNION\n" +
                 "\n" +
@@ -157,10 +157,21 @@ public class JdbcUserDao implements UserDao {
     }
 
     @Override
-    public Transfer transferByID(int id) {
-        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount " +
-                "FROM transfer WHERE transfer_id = ?;";
-        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, id);
+    public Transfer transferByID(int transferId, int userId) {
+        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
+                "FROM transfer \n" +
+                "JOIN account ON transfer.account_from = account.account_id\n" +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
+                "WHERE account_to = ? AND transfer_id = ?\n" +
+                "\n" +
+                "UNION\n" +
+                "\n" +
+                "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username\n" +
+                "FROM transfer \n" +
+                "JOIN account ON transfer.account_to = account.account_id\n" +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id\n" +
+                "WHERE account_from = ? AND transfer_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, userId, transferId, userId, transferId);
         if(results.next()){
             return mapRowToTransfer(results);
         }
@@ -175,6 +186,58 @@ public class JdbcUserDao implements UserDao {
             return results.getInt("account_id");
         }
         return 0;
+    }
+    //TODO when we add the ability to approve or reject transfer we need to change the status and the type
+    @Override
+    public List<Transfer> listPendingTransfersForUser(int idByUsername) {
+        List<Transfer> pendingTransfers = new ArrayList<>();
+        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username " +
+                "FROM transfer " +
+                "JOIN account ON transfer.account_to = account.account_id " +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id " +
+                "WHERE account_from = ? AND transfer_type_id = 1 AND transfer_status_id = 1;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, idByUsername);
+        while(results.next()){
+            pendingTransfers.add(mapRowToTransfer(results));
+        }
+        return pendingTransfers;
+    }
+
+    @Override
+    public Transfer getTransferById(int id) {
+        Transfer transfer = null;
+        String sql = "SELECT transfer_id, transfer_type_id, transfer_status_id, account_from, account_to, amount, username " +
+                "FROM transfer " +
+                "JOIN account ON account.account_id = transfer.account_to " +
+                "JOIN tenmo_user ON account.user_id = tenmo_user.user_id " +
+                "WHERE transfer_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, id);
+        if(results.next()){
+            transfer = mapRowToTransfer(results);
+        }
+        return transfer;
+    }
+
+    @Override
+    public int getUserIdWithAccountId(int accountId) {
+        String sql = "SELECT user_id FROM account WHERE account_id = ?;";
+        SqlRowSet results = jdbcTemplate.queryForRowSet(sql, accountId);
+        if(results.next()){
+            return results.getInt("user_id");
+        }
+        return 0;
+    }
+
+    @Override
+    public void approvePendingTransfer(int id) {
+        String sql = "UPDATE transfer SET transfer_status_id = 2 WHERE transfer_id = ?;";
+        jdbcTemplate.update(sql, id);
+    }
+
+    @Override
+    public void rejectPendingTransfer(int id) {
+        String sql = "UPDATE transfer SET transfer_status_id = 3 WHERE transfer_id = ?;";
+        jdbcTemplate.update(sql, id);
     }
 
     //TODO test method

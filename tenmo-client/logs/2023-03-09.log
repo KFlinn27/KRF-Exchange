@@ -1,0 +1,2 @@
+2023-03-09T12:27:54.0777738 500 : [{"timestamp":"2023-03-09T17:27:54.014+00:00","status":500,"error":"Internal Server Error","message":"PreparedStatementCallback; SQL [INSERT INTO tenmo_user (username, password_hash) VALUES (?, ?) RETU... (530 bytes)]
+2023-03-09T12:33:42.4558813 500 : [{"timestamp":"2023-03-09T17:33:42.453+00:00","status":500,"error":"Internal Server Error","message":"Invalid column name; nested exception is java.sql.SQLException: Invalid column name","path":"/user/transfer/3004/accept"}]

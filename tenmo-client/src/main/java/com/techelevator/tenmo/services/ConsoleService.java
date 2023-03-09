@@ -90,17 +90,31 @@ public class ConsoleService {
         System.out.println("An error occurred. Check the log for details.");
     }
 
+    //TODO handle no transfers and need to make pretty (to/from)
     public void listTransfers(List<Transfer> transfers) {
         for(Transfer current : transfers){
             System.out.println(current.toString());
         }
     }
 
+    //TODO add a request message or modify success message
     public void printSuccessMessage(int sendToId, BigDecimal amount) {
         System.out.println("You sent " + amount + " to " + sendToId);
     }
 
     public void printFailMessage() {
         System.out.println("Your send request failed.");
+    }
+
+    public void printInvalidId(String s) {
+        System.out.println(s);
+    }
+
+    public void printNotEnoughFunds(String s) {
+        System.out.println(s);
+    }
+
+    public void print1Or0Message(String s) {
+        System.out.println(s);
     }
 }
