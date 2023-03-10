@@ -86,13 +86,6 @@ public class TenmoController {
         return transferDao.listPendingTransfersForUser(accountDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName())));
     }
 
-    @RequestMapping(path = "transfer/{id}", method = RequestMethod.GET)
-    public Transfer getTransferByID(@PathVariable int id, Principal principal){
-        return transferDao.transferByID(id, userDao.findIdByUsername(principal.getName()));
-    }
-
-    //User accepts or denies a pending transfer if denied change transfer status to rejected if accepted need to
-    //make sure money can be sent back and forth, if money can be sent we approve or reject it again
     @RequestMapping(path = "transfer/{id}/accept", method = RequestMethod.PUT)
     public boolean acceptPendingTransfers(@PathVariable int id){
         Transfer transfer = transferDao.getTransferById(id);

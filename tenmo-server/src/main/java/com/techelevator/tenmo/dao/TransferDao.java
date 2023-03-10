@@ -11,8 +11,6 @@ public interface TransferDao {
 
     List<Transfer> listTransfersForUser(int idByUsername);
 
-    Transfer transferByID(int transferId, int userId);
-
     List<Transfer> listPendingTransfersForUser(int idByUsername);
 
     Transfer getTransferById(int id);

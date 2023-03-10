@@ -21,10 +21,11 @@ public class JdbcAccountDao implements AccountDao{
         String sql = "UPDATE account SET balance = balance - ? WHERE user_id = ?;";
         try{
             jdbcTemplate.update(sql, balance, id);
+            return true;
         } catch (DataAccessException e){
             return false;
         }
-        return true;
+
     }
 
     @Override
@@ -32,10 +33,10 @@ public class JdbcAccountDao implements AccountDao{
         String sql = "UPDATE account SET balance = balance + ? WHERE user_id = ?;";
         try{
             jdbcTemplate.update(sql, balance, id);
+            return true;
         } catch (DataAccessException e){
             return false;
         }
-        return true;
     }
 
     @Override
