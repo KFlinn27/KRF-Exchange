@@ -118,7 +118,7 @@ public class App {
                 consoleService.listTransfers(pendingTransfers, true, 0);
                 id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
             } else {
-                boolean hasEnoughMoney = balance.compareTo(transferSearchedFor.getAmount()) >= 0;
+                boolean hasEnoughMoney = depositLessThanBalance(transferSearchedFor.getAmount(), balance);
                 int approve = consoleService.promptTransferOptions();
                 if (approve == 1 && hasEnoughMoney) {
                     //need to move money and change the transfer
@@ -166,22 +166,26 @@ public class App {
 	private void transferBucks(boolean sending) {
         List<User> users = tenmoService.getUsers();
         consoleService.printUsers(users);
+        BigDecimal balance = tenmoService.getBalance();
         int idToSendOrReceive = consoleService.promptForInt("Please enter the user ID: ");
         while(!idValid(users, idToSendOrReceive)){
             consoleService.printInvalidId("This ID is not valid. Please enter a valid ID.");
             idToSendOrReceive = consoleService.promptForInt("Please enter the user ID: ");
         }
         BigDecimal amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
-        boolean amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+        boolean amountGreaterThan0 = validAmount(amount);
         while(!amountGreaterThan0){
             consoleService.printMessage("Your amount to transfer must be greater than 0.");
             amount = consoleService.promptForBigDecimal("Please enter amount to transfer: ");
-            amountGreaterThan0 = amount.compareTo(BigDecimal.valueOf(0)) > 0;
+            amountGreaterThan0 = validAmount(amount);
         }
-        if(!sending && amountGreaterThan0 && tenmoService.requestMoney(idToSendOrReceive, amount)){
+        boolean depositLessThanBalance = depositLessThanBalance(amount, balance);
+        if(!sending && tenmoService.requestMoney(idToSendOrReceive, amount)){
             consoleService.printRequestMessage(idToSendOrReceive, amount);
-        } else if (sending && amountGreaterThan0 && tenmoService.sendMoney(idToSendOrReceive, amount)){
+        } else if (sending && depositLessThanBalance && tenmoService.sendMoney(idToSendOrReceive, amount)){
             consoleService.printSuccessMessage(idToSendOrReceive, amount);
+        } else if(sending && !depositLessThanBalance) {
+            consoleService.printMessage("There was not enough money in your account to send.");
         }else{
             consoleService.printFailMessage();
         }
@@ -191,9 +195,12 @@ public class App {
         return currentUser.getUser().getUsername();
     }
 
-    public boolean validAmount(BigDecimal amount, BigDecimal balance){
-        //TODO create a method for amounts that can be tested by seperating check into this method
-        return false;
+    public boolean validAmount(BigDecimal amount){
+        return amount.compareTo(BigDecimal.valueOf(0)) > 0;
+    }
+
+    public boolean depositLessThanBalance(BigDecimal amount, BigDecimal balance){
+        return balance.compareTo(amount) >= 0;
     }
 
 //

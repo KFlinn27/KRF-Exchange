@@ -1,5 +1,7 @@
 package com.techelevator.tenmo.controller;
 
+import com.techelevator.tenmo.dao.AccountDao;
+import com.techelevator.tenmo.dao.TransferDao;
 import com.techelevator.tenmo.dao.UserDao;
 import com.techelevator.tenmo.model.AmountDto;
 import com.techelevator.tenmo.model.Transfer;
@@ -19,14 +21,18 @@ import java.util.List;
 public class TenmoController {
 
     private UserDao userDao;
+    private AccountDao accountDao;
+    private TransferDao transferDao;
 
-    public TenmoController(UserDao userDao){
+    public TenmoController(UserDao userDao, AccountDao accountDao, TransferDao transferDao){
         this.userDao = userDao;
+        this.accountDao = accountDao;
+        this.transferDao = transferDao;
     }
 
     @RequestMapping(path = "balance/", method = RequestMethod.GET)
     public BigDecimal getBalance(Principal principal){
-        return userDao.getBalance(principal.getName());
+        return accountDao.getBalance(principal.getName());
     }
 
     @RequestMapping(method = RequestMethod.GET)
@@ -36,18 +42,18 @@ public class TenmoController {
 
     @RequestMapping(path = "accountId/", method = RequestMethod.GET)
     public Integer getAccIdWithUserID(Principal principal){
-        return userDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName()));
+        return accountDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName()));
     }
 
     @RequestMapping(path = "send/{receiverUserId}", method = RequestMethod.PUT)
     public boolean sendFunds(@PathVariable int receiverUserId, @RequestBody AmountDto amountSent, Principal principal){
         BigDecimal amount = amountSent.getAmount();
         int senderUserId = userDao.findIdByUsername(principal.getName());
-        int senderId = userDao.getAccountIdWithUserId(senderUserId);
-        int receiverId = userDao.getAccountIdWithUserId(receiverUserId);
-        boolean hasFunds = userDao.getBalance(principal.getName()).compareTo(amount) >= 0;
-        if(hasFunds && userDao.deposit(receiverUserId, amount) && userDao.withdraw(senderUserId, amount)){
-            if(userDao.addTransfer(2, 2, senderId, receiverId, amount)){
+        int senderId = accountDao.getAccountIdWithUserId(senderUserId);
+        int receiverId = accountDao.getAccountIdWithUserId(receiverUserId);
+        boolean hasFunds = accountDao.getBalance(principal.getName()).compareTo(amount) >= 0;
+        if(hasFunds && accountDao.deposit(receiverUserId, amount) && accountDao.withdraw(senderUserId, amount)){
+            if(transferDao.addTransfer(2, 2, senderId, receiverId, amount)){
                 return true;
             } else {
                 return false;
@@ -61,9 +67,9 @@ public class TenmoController {
     public boolean requestFunds(@PathVariable int senderUserId, @RequestBody AmountDto amountRequested, Principal principal){
         BigDecimal amount = amountRequested.getAmount();
         int receiverUserId = userDao.findIdByUsername(principal.getName());
-        int receiverId = userDao.getAccountIdWithUserId(receiverUserId);
-        int senderId = userDao.getAccountIdWithUserId(senderUserId);
-        if(userDao.addTransfer(1, 1, senderId, receiverId, amount)){
+        int receiverId = accountDao.getAccountIdWithUserId(receiverUserId);
+        int senderId = accountDao.getAccountIdWithUserId(senderUserId);
+        if(transferDao.addTransfer(1, 1, senderId, receiverId, amount)){
             return true;
         }
         return false;
@@ -71,30 +77,30 @@ public class TenmoController {
 
     @RequestMapping(path = "transfers/", method = RequestMethod.GET)
     public List<Transfer> getTransferForUser(Principal principal){
-        return userDao.listTransfersForUser(userDao.findIdByUsername(principal.getName()));
+        return transferDao.listTransfersForUser(accountDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName())));
     }
 
 
     @RequestMapping(path = "transfers/pending", method = RequestMethod.GET)
     public List<Transfer> getPendingTransfersForUser(Principal principal){
-        return userDao.listPendingTransfersForUser(userDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName())));
+        return transferDao.listPendingTransfersForUser(accountDao.getAccountIdWithUserId(userDao.findIdByUsername(principal.getName())));
     }
 
     @RequestMapping(path = "transfer/{id}", method = RequestMethod.GET)
     public Transfer getTransferByID(@PathVariable int id, Principal principal){
-        return userDao.transferByID(id, userDao.findIdByUsername(principal.getName()));
+        return transferDao.transferByID(id, userDao.findIdByUsername(principal.getName()));
     }
 
     //User accepts or denies a pending transfer if denied change transfer status to rejected if accepted need to
     //make sure money can be sent back and forth, if money can be sent we approve or reject it again
     @RequestMapping(path = "transfer/{id}/accept", method = RequestMethod.PUT)
     public boolean acceptPendingTransfers(@PathVariable int id){
-        Transfer transfer = userDao.getTransferById(id);
-        int senderUserId = userDao.getUserIdWithAccountId(transfer.getAccountFrom());
-        int receiverUserId = userDao.getUserIdWithAccountId(transfer.getAccountTo());
+        Transfer transfer = transferDao.getTransferById(id);
+        int senderUserId = accountDao.getUserIdWithAccountId(transfer.getAccountFrom());
+        int receiverUserId = accountDao.getUserIdWithAccountId(transfer.getAccountTo());
         if(senderUserId == 0 || receiverUserId == 0) return false;
-        if(userDao.deposit(receiverUserId, transfer.getAmount()) && userDao.withdraw(senderUserId, transfer.getAmount())){
-            userDao.approvePendingTransfer(id);
+        if(accountDao.deposit(receiverUserId, transfer.getAmount()) && accountDao.withdraw(senderUserId, transfer.getAmount())){
+            transferDao.approvePendingTransfer(id);
             return true;
             }
         return false;
@@ -102,7 +108,7 @@ public class TenmoController {
 
     @RequestMapping(path = "transfer/{id}/reject", method = RequestMethod.PUT)
     public void rejectPendingTransfers(@PathVariable int id){
-        userDao.rejectPendingTransfer(id);
+        transferDao.rejectPendingTransfer(id);
     }
 
 

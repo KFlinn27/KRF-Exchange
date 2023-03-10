@@ -18,27 +18,4 @@ public interface UserDao {
 
     boolean create(String username, String password);
 
-    BigDecimal getBalance(String username);
-
-    boolean withdraw(int id, BigDecimal balance);
-
-    boolean deposit(int id, BigDecimal balance);
-
-    boolean addTransfer(int type, int status, int senderId, int receiverId, BigDecimal amount);
-
-    List<Transfer> listTransfersForUser(int idByUsername);
-
-    Transfer transferByID(int transferId, int userId);
-
-    int getAccountIdWithUserId(int userId);
-
-    List<Transfer> listPendingTransfersForUser(int idByUsername);
-
-    Transfer getTransferById(int id);
-
-    int getUserIdWithAccountId(int accountId);
-
-    void approvePendingTransfer(int id);
-
-    void rejectPendingTransfer(int id);
 }

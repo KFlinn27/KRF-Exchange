@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class ConsoleService {
-    private final String LINE_BREAK = "-----------------------------------------------------------------";
+    private final String LINE_BREAK = "------------------------------------------------------------------------------";
 
     private final Scanner scanner = new Scanner(System.in);
 
@@ -113,8 +113,9 @@ public class ConsoleService {
                 } else {
                     type = "To: ";
                 }
-
-                System.out.printf("%-15s %-6s %-30s $ %-20s\n", current.getTransferId(), type, current.getUsername(), current.getAmount());
+                String rejected = "";
+                if(current.getStatusId() == 3) rejected = " (rejected)";
+                System.out.printf("%-15s %-6s %-30s $ %-20s\n", current.getTransferId(), type, current.getUsername(), current.getAmount() + rejected);
             }
         }
         printLineBreak();
@@ -152,7 +153,9 @@ public class ConsoleService {
     }
 
     public void printNotEnoughFunds(String s) {
+        System.out.println();
         System.out.println(s);
+        System.out.println();
     }
 
     public void print1Or0Message(String s) {

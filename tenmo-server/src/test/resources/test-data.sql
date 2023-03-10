@@ -77,6 +77,15 @@ INSERT INTO tenmo_user (username,password_hash,role) VALUES ('user3','user3','RO
 
 INSERT INTO account (user_id, balance) VALUES (1001, 1000); -- 2001
 INSERT INTO account (user_id, balance) VALUES (1002, 1000); -- 2002
-INSERT INTO account (user_id, balance) VALUES (1002, 1000); -- 2003
+INSERT INTO account (user_id, balance) VALUES (1003, 1000); -- 2003
+
+INSERT INTO transfer (transfer_type_id, transfer_status_id, account_from, account_to, amount)
+VALUES (1, 1, 2001, 2002, 111.11);
+INSERT INTO transfer (transfer_type_id, transfer_status_id, account_from, account_to, amount)
+VALUES (2, 2, 2002, 2001, 10);
+INSERT INTO transfer (transfer_type_id, transfer_status_id, account_from, account_to, amount)
+VALUES (1, 2, 2003, 2002, 500);
+INSERT INTO transfer (transfer_type_id, transfer_status_id, account_from, account_to, amount)
+VALUES (1, 3, 2003, 2001, 76.01);
 
 COMMIT TRANSACTION;
