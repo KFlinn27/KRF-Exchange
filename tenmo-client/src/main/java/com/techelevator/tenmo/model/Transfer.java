@@ -9,18 +9,18 @@ public class Transfer {
     private int accountFrom;
     private int accountTo;
     private BigDecimal amount;
-    private String username;
+    private String userNotLoggedIn;
 
     public Transfer(){}
 
-    public Transfer(int id, int typeId, int statusId, int accountFrom, int accountTo, BigDecimal amount, String username){
+    public Transfer(int id, int typeId, int statusId, int accountFrom, int accountTo, BigDecimal amount, String userNotLoggedIn){
         this.transferId = id;
         this.typeId = typeId;
         this.statusId = statusId;
         this.accountFrom = accountFrom;
         this.accountTo = accountTo;
         this.amount = amount;
-        this.username = username;
+        this.userNotLoggedIn = userNotLoggedIn;
     }
 
     public String getTypeString(){
@@ -35,62 +35,42 @@ public class Transfer {
 
     @Override
     public String toString(){
-        return transferId + "      " + username + "        " + amount;
+        return transferId + "      " + userNotLoggedIn + "        " + amount;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
+    public String getUserNotLoggedIn() {
+        return userNotLoggedIn;
     }
 
     public int getTransferId() {
         return transferId;
     }
-
-    public void setTransferId(int transferId) {
-        this.transferId = transferId;
-    }
-
     public int getTypeId() {
         return typeId;
     }
-
-    public void setTypeId(int typeId) {
-        this.typeId = typeId;
-    }
-
     public int getStatusId() {
         return statusId;
     }
 
-    public void setStatusId(int statusId) {
-        this.statusId = statusId;
+    public String statusType(){
+        switch(this.statusId){
+            case 1: return "Pending";
+            case 2: return "Approved";
+            case 3: return "Rejected";
+            default: {
+                return "Unavailable";
+            }
+        }
     }
 
     public int getAccountFrom() {
         return accountFrom;
     }
 
-    public void setAccountFrom(int accountFrom) {
-        this.accountFrom = accountFrom;
-    }
-
     public int getAccountTo() {
         return accountTo;
     }
-
-    public void setAccountTo(int accountTo) {
-        this.accountTo = accountTo;
-    }
-
     public BigDecimal getAmount() {
         return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
     }
 }

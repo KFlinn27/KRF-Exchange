@@ -104,8 +104,22 @@ public class App {
 
     private void viewTransferHistory() {
         List<Transfer> transfers = tenmoService.getTransfers();
-        if(transfers.size() > 0) {
+        if (transfers.size() > 0) {
             consoleService.listTransfers(transfers, false, currentUserAccountID);
+            int targetID = consoleService.promptForInt("Please enter the transfer ID for specific details. Enter 0 to exit display:");
+            while (targetID != 0) {
+                Transfer targetTransfer = retrieveTransfer(transfers, targetID);
+                if (targetTransfer == null) {
+                    consoleService.printInvalidId("Not a valid ID, please enter valid ID from list.");
+                    consoleService.listTransfers(transfers, false, currentUserAccountID);
+                    targetID = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
+                } else {
+                    consoleService.printTransfer(targetTransfer, targetTransfer.getUserNotLoggedIn(), targetTransfer.statusType());
+                    break;
+                }
+            }
+
+
         } else {
             consoleService.printMessage("You have no transfer history on our platform.");
         }
@@ -114,28 +128,29 @@ public class App {
     private void viewPendingRequests() {
         List<Transfer> pendingTransfers = tenmoService.getPendingTransfers();
         if (pendingTransfers.size() > 0) {
-            BigDecimal balance = tenmoService.getBalance();
+
             consoleService.listTransfers(pendingTransfers, true, 0);
             int id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
             while (id != 0) {
-                Transfer transferSearchedFor = transferExists(pendingTransfers, id);
-                if (transferSearchedFor == null) {
+                Transfer targetedTransfer = retrieveTransfer(pendingTransfers, id);
+                if (targetedTransfer == null) {
                     consoleService.printInvalidId("Not a valid ID, please enter valid ID from list.");
                     consoleService.listTransfers(pendingTransfers, true, 0);
                     id = consoleService.promptForInt("Please enter transfer ID you would like to approve or reject (enter 0 to exit): ");
                 } else {
-                    boolean hasEnoughMoney = depositLessThanBalance(transferSearchedFor.getAmount(), balance);
+                    BigDecimal balance = tenmoService.getBalance();
+                    boolean hasEnoughMoney = depositLessThanBalance(targetedTransfer.getAmount(), balance);
                     int approve = consoleService.promptTransferOptions();
                     if (approve == 1 && hasEnoughMoney) {
                         if (tenmoService.acceptRequest(id)) {
-                            consoleService.printTransfer(transferSearchedFor, currentUsername(), "Approved");
+                            consoleService.printTransfer(targetedTransfer, currentUsername(), "Approved");
                         } else {
                             consoleService.printFailMessage();
                         }
                         break;
                     } else if (approve == 2) {
                         tenmoService.rejectRequest(id);
-                        consoleService.printTransfer(transferSearchedFor, currentUsername(), "Rejected");
+                        consoleService.printTransfer(targetedTransfer, currentUsername(), "Rejected");
                         break;
                     } else if (approve == 1) {
                         consoleService.printNotEnoughFunds("Sorry, not enough money in account.");
@@ -151,7 +166,7 @@ public class App {
         }
     }
 
-    private Transfer transferExists(List<Transfer> transfers, int id) {
+    private Transfer retrieveTransfer(List<Transfer> transfers, int id) {
         for (Transfer currentTransfer : transfers) {
             if (currentTransfer.getTransferId() == id) {
                 return currentTransfer;
@@ -186,10 +201,9 @@ public class App {
         }
 
         boolean depositLessThanBalance = depositLessThanBalance(amount, balance);
-        if(amount.compareTo(BigDecimal.valueOf(0)) == 0){
+        if (amount.compareTo(BigDecimal.valueOf(0)) == 0) {
             consoleService.printMessage("Returning to previous menu.");
-        }
-        else if (!sending && tenmoService.requestMoney(idToSendOrReceive, amount)) {
+        } else if (!sending && tenmoService.requestMoney(idToSendOrReceive, amount)) {
             consoleService.printRequestMessage(idToSendOrReceive, amount);
         } else if (sending && depositLessThanBalance && tenmoService.sendMoney(idToSendOrReceive, amount)) {
             consoleService.printSuccessMessage(idToSendOrReceive, amount);

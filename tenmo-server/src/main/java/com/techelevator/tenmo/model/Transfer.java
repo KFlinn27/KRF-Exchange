@@ -9,26 +9,26 @@ public class Transfer {
     private int accountFrom;
     private int accountTo;
     private BigDecimal amount;
-    private String username;
+    private String userNotLoggedIn;
 
     public Transfer(){}
 
-    public Transfer(int id, int typeId, int statusId, int accountFrom, int accountTo, BigDecimal amount, String username){
+    public Transfer(int id, int typeId, int statusId, int accountFrom, int accountTo, BigDecimal amount, String userNotLoggedIn){
         this.transferId = id;
         this.typeId = typeId;
         this.statusId = statusId;
         this.accountFrom = accountFrom;
         this.accountTo = accountTo;
-        this.username = username;
+        this.userNotLoggedIn = userNotLoggedIn;
         this.amount = amount;
     }
 
-    public String getUsername() {
-        return username;
+    public String getUserNotLoggedIn() {
+        return userNotLoggedIn;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUserNotLoggedIn(String userNotLoggedIn) {
+        this.userNotLoggedIn = userNotLoggedIn;
     }
 
     public int getTransferId() {

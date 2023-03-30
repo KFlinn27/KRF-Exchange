@@ -105,7 +105,7 @@ public class ConsoleService {
         printLineBreak();
         for(Transfer current : transfers){
             if(pending) {
-                System.out.printf("%-15s %-30s $ %-20s\n", current.getTransferId(), current.getUsername(), current.getAmount());
+                System.out.printf("%-15s %-30s $ %-20s\n", current.getTransferId(), current.getUserNotLoggedIn(), current.getAmount());
             } else {
                 String type;
                 if(userAccId == current.getAccountTo()){
@@ -115,7 +115,7 @@ public class ConsoleService {
                 }
                 String rejected = "";
                 if(current.getStatusId() == 3) rejected = " (rejected)";
-                System.out.printf("%-15s %-6s %-30s $ %-20s\n", current.getTransferId(), type, current.getUsername(), current.getAmount() + rejected);
+                System.out.printf("%-15s %-6s %-30s $ %-20s\n", current.getTransferId(), type, current.getUserNotLoggedIn(), current.getAmount() + rejected);
             }
         }
         printLineBreak();
@@ -175,17 +175,17 @@ public class ConsoleService {
         System.out.println(LINE_BREAK);
     }
 
-    public void printTransfer(Transfer transferRejected, String username, String status) {
+    public void printTransfer(Transfer transferToPrint, String username, String status) {
         System.out.println();
         printLineBreak();
         System.out.println("Transfer Details");
         printLineBreak();
-        System.out.println("ID: " + transferRejected.getTransferId());
+        System.out.println("ID: " + transferToPrint.getTransferId());
         System.out.println("From: " + username);
-        System.out.println("To: " + transferRejected.getUsername());
-        System.out.println("Type: " + transferRejected.getTypeString());
+        System.out.println("To: " + transferToPrint.getUserNotLoggedIn());
+        System.out.println("Type: " + transferToPrint.getTypeString());
         System.out.println("Status: " + status);
-        System.out.println("Amount: $" + transferRejected.getAmount());
+        System.out.println("Amount: $" + transferToPrint.getAmount());
         System.out.println();
     }
 
@@ -196,4 +196,5 @@ public class ConsoleService {
                 "---------\n" +
                 "Please choose an option: ");
     }
+
 }

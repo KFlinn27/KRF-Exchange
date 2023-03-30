@@ -107,7 +107,7 @@ public class JdbcTransferDao implements TransferDao{
         transfer.setAccountFrom(row.getInt("account_from"));
         transfer.setAccountTo(row.getInt("account_to"));
         transfer.setAmount(row.getBigDecimal("amount"));
-        transfer.setUsername(row.getString("username"));
+        transfer.setUserNotLoggedIn(row.getString("username"));
         return transfer;
     }
 
